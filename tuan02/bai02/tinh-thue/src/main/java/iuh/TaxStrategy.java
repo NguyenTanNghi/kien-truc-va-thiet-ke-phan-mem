@@ -2,8 +2,10 @@ package iuh;
 
 /**
  * @author Nguyen Tan Nghi
- * @created 1/21/2026 2:24 PM
  * @version 1.0
+ * @created 1/21/2026 2:24 PM
  */
-public class TaxStrategy {
+public interface TaxStrategy {
+    double calcTax(double price);
+    String name();
 }

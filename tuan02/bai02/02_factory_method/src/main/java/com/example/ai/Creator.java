@@ -2,8 +2,14 @@ package com.example.ai;
 
 /**
  * @author Nguyen Tan Nghi
- * @created 1/21/2026 2:00 PM
  * @version 1.0
+ * @created 1/21/2026 2:00 PM
  */
-public class Creator {
+public abstract class Creator {
+    public abstract Product createProduct(); // factory method
+
+    public void doSomething() {
+        Product p = createProduct();
+        p.use();
+    }
 }

@@ -2,8 +2,9 @@ package strategy;
 
 /**
  * @author Nguyen Tan Nghi
- * @created 1/21/2026 2:11 PM
  * @version 1.0
+ * @created 1/21/2026 2:11 PM
  */
-public class SortStrategy {
+public interface SortStrategy {
+    void sort();
 }

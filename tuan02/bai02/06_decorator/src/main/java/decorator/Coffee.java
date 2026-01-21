@@ -2,8 +2,10 @@ package decorator;
 
 /**
  * @author Nguyen Tan Nghi
- * @created 1/21/2026 2:13 PM
  * @version 1.0
+ * @created 1/21/2026 2:13 PM
  */
-public class Coffee {
+public interface Coffee {
+    String getDescription();
+    int cost();
 }

@@ -2,8 +2,9 @@ package com.example.ai;
 
 /**
  * @author Nguyen Tan Nghi
- * @created 1/21/2026 2:01 PM
  * @version 1.0
+ * @created 1/21/2026 2:01 PM
  */
-public class CreatorA {
+public class CreatorA extends Creator {
+    public Product createProduct() { return new ConcreteProductA(); }
 }
