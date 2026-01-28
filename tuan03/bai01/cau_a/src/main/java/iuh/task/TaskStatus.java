@@ -2,8 +2,12 @@ package iuh.task;
 
 /**
  * @author Nguyen Tan Nghi
- * @created 1/28/2026 1:43 PM
  * @version 1.0
+ * @created 1/28/2026 1:43 PM
  */
-public class TaskStatus {
+public enum TaskStatus {
+    TODO,
+    IN_PROGRESS,
+    DONE,
+    BLOCKED
 }
