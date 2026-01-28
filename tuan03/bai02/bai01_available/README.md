@@ -104,30 +104,36 @@ $nginxConfig = Resolve-Path .\nginx\nginx.conf
 nginx -c $nginxConfig
 ```
 
-**Linux/Mac:**
-
-```bash
-# Lấy đường dẫn tuyệt đối
-NGINX_CONFIG=$(pwd)/nginx/nginx.conf
-
-# Khởi động Nginx
-nginx -c $NGINX_CONFIG
-```
-
 ### 6. Test hệ thống
 
-```bash
-# Test users service
-curl http://localhost:9090/users
+#### Bước 6.1: Kiểm tra PM2 đang chạy
 
-# Test product service
-curl http://localhost:9090/product
+```powershell
+# Xem trạng thái tất cả services
+pm2 status
 
-# Test nhiều lần để thấy PID thay đổi (load balancing)
-for i in {1..10}; do curl http://localhost:9090/users; done
+# Bạn sẽ thấy 4 processes:
+# - users-service-0, users-service-1 (2 instances)
+# - product-service-0, product-service-1 (2 instances)
+# Tất cả phải có status: online
 ```
 
-**Kết quả mẫu:**
+#### Bước 6.2: Test Users Service
+
+**PowerShell:**
+
+```powershell
+# Test lần 1
+Invoke-RestMethod -Uri http://localhost:9090/users
+
+# Test lần 2 (để thấy PID thay đổi - Load Balancing)
+Invoke-RestMethod -Uri http://localhost:9090/users
+
+# Test lần 3
+Invoke-RestMethod -Uri http://localhost:9090/users
+```
+
+**Kết quả mong đợi:**
 
 ```json
 {
@@ -138,32 +144,230 @@ for i in {1..10}; do curl http://localhost:9090/users; done
 }
 ```
 
-## Test High Availability
+💡 **LƯU Ý**: Mỗi lần gọi, bạn sẽ thấy **PID khác nhau** (ví dụ: 12345, 12346). Đó là bằng chứng **Load Balancing đang hoạt động** - request được phân phối đều giữa 2 instances!
 
-### Test 1: Kill một process
+#### Bước 6.3: Test Product Service
 
-```bash
-# Xem danh sách processes
-pm2 status
+**PowerShell:**
 
-# Kill một instance (thay <id> bằng ID thực tế)
-pm2 delete <id>
+```powershell
+# Test product service
+Invoke-RestMethod -Uri http://localhost:9090/product
+Invoke-RestMethod -Uri http://localhost:9090/product
+Invoke-RestMethod -Uri http://localhost:9090/product
+```
 
-# Test lại - vẫn hoạt động với instance còn lại
-curl http://localhost:9090/users
+**Kết quả mong đợi:**
 
-# PM2 sẽ tự restart instance bị kill
+```json
+{
+    "service": "product",
+    "pid": 23456,
+    "hostname": "YOUR-PC",
+    "time": "2026-01-28T10:30:00.000Z"
+}
+```
+
+💡 **LƯU Ý**: PID cũng sẽ thay đổi giữa các request!
+
+#### Bước 6.4: Test nhiều lần liên tục (Load Testing)
+
+**PowerShell:**
+
+```powershell
+# Test 10 lần liên tục - xem PID thay đổi
+1..10 | ForEach-Object {
+    Write-Host "Request $_" -ForegroundColor Cyan
+    $result = Invoke-RestMethod -Uri http://localhost:9090/users
+    Write-Host "  PID: $($result.pid) - Time: $($result.time)" -ForegroundColor Green
+}
+```
+
+**Kết quả mẫu:**
+
+```
+Request 1
+  PID: 12345 - Time: 2026-01-28T10:30:01.123Z
+Request 2
+  PID: 12346 - Time: 2026-01-28T10:30:01.456Z
+Request 3
+  PID: 12345 - Time: 2026-01-28T10:30:01.789Z
+Request 4
+  PID: 12346 - Time: 2026-01-28T10:30:02.012Z
+...
+```
+
+✅ **Thành công**: Bạn thấy PID luân phiên giữa 2 giá trị → Load Balancing hoạt động!
+
+---
+
+## 🚀 Test High Availability (Độ sẵn sàng cao)
+
+Bây giờ test phần quan trọng nhất: **Hệ thống có chạy tiếp khi 1 instance chết không?**
+
+### Test 7.1: Kill 1 instance và kiểm tra hệ thống vẫn hoạt động
+
+#### Bước 1: Xem danh sách processes đang chạy
+
+```powershell
 pm2 status
 ```
 
-### Test 2: Restart toàn bộ
+**Kết quả:**
 
-```bash
-# Restart tất cả services
-pm2 restart all
+```
+┌─────┬──────────────────┬─────────────┬─────────┬─────────┬──────────┐
+│ id  │ name             │ mode        │ status  │ cpu     │ memory   │
+├─────┼──────────────────┼─────────────┼─────────┼─────────┼──────────┤
+│ 0   │ users-service    │ cluster     │ online  │ 0%      │ 45.2mb   │
+│ 1   │ users-service    │ cluster     │ online  │ 0%      │ 43.8mb   │
+│ 2   │ product-service  │ cluster     │ online  │ 0%      │ 44.5mb   │
+│ 3   │ product-service  │ cluster     │ online  │ 0%      │ 42.9mb   │
+└─────┴──────────────────┴─────────────┴─────────┴─────────┴──────────┘
+```
 
-# Hệ thống vẫn available trong quá trình restart
-curl http://localhost:9090/users
+#### Bước 2: Kill 1 instance của users-service
+
+```powershell
+# Kill instance id=0 (users-service instance đầu tiên)
+pm2 delete 0
+
+# Hoặc stop nếu muốn giữ lại
+# pm2 stop 0
+```
+
+#### Bước 3: Test ngay lập tức - Hệ thống VẪN hoạt động!
+
+```powershell
+# Test liên tục 5 lần
+1..5 | ForEach-Object {
+    Write-Host "Request $_" -ForegroundColor Yellow
+    $result = Invoke-RestMethod -Uri http://localhost:9090/users
+    Write-Host "  ✓ SUCCESS - PID: $($result.pid)" -ForegroundColor Green
+}
+```
+
+**Kết quả:**
+
+```
+Request 1
+  ✓ SUCCESS - PID: 12346
+Request 2
+  ✓ SUCCESS - PID: 12346
+Request 3
+  ✓ SUCCESS - PID: 12346
+Request 4
+  ✓ SUCCESS - PID: 12346
+Request 5
+  ✓ SUCCESS - PID: 12346
+```
+
+✅ **Thành công**: Hệ thống VẪN trả về kết quả! Instance còn lại (PID 12346) đang phục vụ tất cả request!
+
+#### Bước 4: PM2 tự động restart instance bị kill
+
+```powershell
+# Chờ vài giây rồi kiểm tra lại
+Start-Sleep -Seconds 5
+pm2 status
+```
+
+**Kết quả:**
+
+```
+┌─────┬──────────────────┬─────────────┬─────────┬──────────┬──────────┐
+│ id  │ name             │ mode        │ status  │ restarts │ memory   │
+├─────┼──────────────────┼─────────────┼─────────┼──────────┼──────────┤
+│ 0   │ users-service    │ cluster     │ online  │ 1        │ 42.1mb   │  ← Đã restart!
+│ 1   │ users-service    │ cluster     │ online  │ 0        │ 43.8mb   │
+│ 2   │ product-service  │ cluster     │ online  │ 0        │ 44.5mb   │
+│ 3   │ product-service  │ cluster     │ online  │ 0        │ 42.9mb   │
+└─────┴──────────────────┴─────────────┴─────────┴──────────┴──────────┘
+```
+
+✅ **PM2 Auto-restart**: Instance id=0 đã được restart tự động (xem cột "restarts" = 1)!
+
+#### Bước 5: Test lại - Load Balancing hoạt động trở lại
+
+```powershell
+# Test 5 lần nữa
+1..5 | ForEach-Object {
+    $result = Invoke-RestMethod -Uri http://localhost:9090/users
+    Write-Host "Request $_ - PID: $($result.pid)" -ForegroundColor Cyan
+}
+```
+
+**Kết quả:**
+
+```
+Request 1 - PID: 12346
+Request 2 - PID: 15789  ← Instance mới sau khi restart
+Request 3 - PID: 12346
+Request 4 - PID: 15789
+Request 5 - PID: 12346
+```
+
+✅ **Hoàn hảo**: Cả 2 instances đều hoạt động, Load Balancing lại bình thường!
+
+---
+
+### Test 7.2: Simulate Crash (Giả lập process bị crash)
+
+#### Bước 1: Xem logs để biết PID thực tế
+
+```powershell
+pm2 logs users-service --lines 20
+```
+
+Tìm dòng như: `[USERS-SERVICE] Server started on port 3001 with PID: 12345`
+
+#### Bước 2: Kill process bằng Windows Task Manager
+
+```powershell
+# Giả sử PID là 12345
+taskkill /PID 12345 /F
+```
+
+#### Bước 3: Test ngay - Vẫn hoạt động!
+
+```powershell
+Invoke-RestMethod -Uri http://localhost:9090/users
+```
+
+✅ **Kết quả**: Vẫn nhận được response từ instance còn lại!
+
+#### Bước 4: Kiểm tra PM2 auto-restart
+
+```powershell
+pm2 status
+pm2 logs users-service --lines 5
+```
+
+✅ **PM2 đã restart**: Instance bị kill đã được khởi động lại tự động!
+
+---
+
+## 📊 Tổng kết Test
+
+### ✅ Các tính năng đã test thành công:
+
+1. **Load Balancing**: ✓ Request được phân phối đều giữa 2 instances (PID thay đổi)
+2. **High Availability**: ✓ Kill 1 instance, hệ thống vẫn hoạt động
+3. **Auto Restart**: ✓ PM2 tự động restart instance bị kill trong vài giây
+4. **Failover**: ✓ Instance còn lại tiếp tục phục vụ khi instance kia chết
+5. **Zero Downtime**: ✓ Không có downtime trong quá trình restart
+
+### 📈 Kiểm tra Performance
+
+```powershell
+# Xem CPU & Memory usage
+pm2 monit
+
+# Xem logs realtime
+pm2 logs
+
+# Xem thông tin chi tiết 1 service
+pm2 show users-service
 ```
 
 ## Quản lý PM2

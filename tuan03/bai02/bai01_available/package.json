@@ -1,0 +1,25 @@
+{
+    "name": "node-available-lb-ts",
+    "version": "1.0.0",
+    "description": "Node.js High Availability + Load Balancing project",
+    "main": "load-balancer.js",
+    "scripts": {
+        "lb": "node load-balancer.js",
+        "lb:pm2": "pm2 start load-balancer.js --name load-balancer"
+    },
+    "keywords": [
+        "nodejs",
+        "load-balancer",
+        "high-availability",
+        "pm2",
+        "cluster"
+    ],
+    "author": "",
+    "license": "MIT",
+    "dependencies": {
+        "http-proxy": "^1.18.1"
+    },
+    "devDependencies": {
+        "pm2": "^6.0.14"
+    }
+}

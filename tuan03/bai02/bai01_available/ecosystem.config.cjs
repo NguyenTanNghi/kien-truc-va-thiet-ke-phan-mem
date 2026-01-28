@@ -3,8 +3,7 @@ module.exports = {
         {
             name: "users-service",
             cwd: "./users-service",
-            script: "npm",
-            args: "run start",
+            script: "./dist/server.js",
             instances: 2,
             exec_mode: "cluster",
             env: {
@@ -22,8 +21,7 @@ module.exports = {
         {
             name: "product-service",
             cwd: "./product-service",
-            script: "npm",
-            args: "run start",
+            script: "./dist/server.js",
             instances: 2,
             exec_mode: "cluster",
             env: {
