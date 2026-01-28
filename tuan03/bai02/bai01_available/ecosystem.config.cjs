@@ -1,0 +1,42 @@
+module.exports = {
+    apps: [
+        {
+            name: "users-service",
+            cwd: "./users-service",
+            script: "npm",
+            args: "run start",
+            instances: 2,
+            exec_mode: "cluster",
+            env: {
+                PORT: 3001,
+                NODE_ENV: "production",
+            },
+            autorestart: true,
+            watch: false,
+            max_memory_restart: "500M",
+            error_file: "./logs/users-service-error.log",
+            out_file: "./logs/users-service-out.log",
+            log_date_format: "YYYY-MM-DD HH:mm:ss Z",
+            merge_logs: true,
+        },
+        {
+            name: "product-service",
+            cwd: "./product-service",
+            script: "npm",
+            args: "run start",
+            instances: 2,
+            exec_mode: "cluster",
+            env: {
+                PORT: 3002,
+                NODE_ENV: "production",
+            },
+            autorestart: true,
+            watch: false,
+            max_memory_restart: "500M",
+            error_file: "./logs/product-service-error.log",
+            out_file: "./logs/product-service-out.log",
+            log_date_format: "YYYY-MM-DD HH:mm:ss Z",
+            merge_logs: true,
+        },
+    ],
+};
