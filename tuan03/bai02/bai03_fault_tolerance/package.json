@@ -1,0 +1,24 @@
+{
+    "name": "bai03-fault-tolerance",
+    "version": "1.0.0",
+    "description": "Minh họa Fault Tolerance với Circuit Breaker và Retry Pattern",
+    "main": "index.js",
+    "type": "module",
+    "scripts": {
+        "start": "node src/index.js",
+        "demo-circuit-breaker": "node src/circuit-breaker-demo.js",
+        "demo-retry": "node src/retry-demo.js",
+        "demo-timeout": "node src/timeout-demo.js"
+    },
+    "keywords": [
+        "fault-tolerance",
+        "circuit-breaker",
+        "retry",
+        "resilience"
+    ],
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "axios": "^1.6.2"
+    }
+}
